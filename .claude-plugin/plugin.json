@@ -1,0 +1,9 @@
+{
+  "name": "nodebpy",
+  "version": "0.1.0",
+  "description": "Build Blender node trees (geometry, shader, compositor) in Python with nodebpy, executed live via the Blender MCP.",
+  "author": {
+    "name": "Jan-Hendrik Müller",
+    "url": "https://github.com/kolibril13"
+  }
+}

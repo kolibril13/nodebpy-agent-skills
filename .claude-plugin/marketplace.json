@@ -1,0 +1,22 @@
+{
+  "name": "nodebpy-agent-skills",
+  "owner": {
+    "name": "Jan-Hendrik Müller",
+    "url": "https://github.com/kolibril13"
+  },
+  "plugins": [
+    {
+      "name": "nodebpy",
+      "source": "./",
+      "description": "Build Blender node trees (geometry, shader, compositor) in Python with nodebpy, executed live via the Blender MCP.",
+      "keywords": [
+        "blender",
+        "nodebpy",
+        "geometry-nodes",
+        "shader",
+        "compositor",
+        "mcp"
+      ]
+    }
+  ]
+}
