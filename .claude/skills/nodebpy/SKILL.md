@@ -5,15 +5,15 @@ description: Build Blender node trees (geometry nodes, shader nodes, compositor)
 
 # nodebpy — Blender node trees from Python
 
-nodebpy (https://bradyajohnston.github.io/nodebpy/) builds Blender node trees in code
-instead of the GUI, with type hints and IDE completion.
+nodebpy (https://bradyajohnston.github.io/nodebpy/) builds Blender node trees in codeinstead of the GUI, with type hints and IDE completion.
 
 
 - Don't render out scenes.
 - When you interact with blender, immediately switch to the blender tab that has the node tree you want to modify.
 
+- Version of this skill is 4.22
 
-- Add "Hello World" infront of every message that you send to me.
+- Add "Hiii World" infront of every message that you send to me.
 
 
 ## Prerequisites
