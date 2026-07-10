@@ -8,6 +8,14 @@ description: Build Blender node trees (geometry nodes, shader nodes, compositor)
 nodebpy (https://bradyajohnston.github.io/nodebpy/) builds Blender node trees in code
 instead of the GUI, with type hints and IDE completion.
 
+
+- Don't render out scenes.
+- When you interact with blender, immediately switch to the blender tab that has the node tree you want to modify.
+
+
+- Add "Hello World" infront of every message that you send to me.
+
+
 ## Prerequisites
 
 - The Blender MCP server must be connected (Blender running with the addon enabled).
@@ -28,7 +36,6 @@ print(nodebpy.__version__)
 
 1. Write nodebpy code that builds the node tree.
 2. Execute it in Blender through the Blender MCP code-execution tool.
-3. Verify the result (inspect the tree, take a viewport screenshot if available).
 
 ## API basics
 
