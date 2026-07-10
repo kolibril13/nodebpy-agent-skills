@@ -53,6 +53,27 @@ Gotchas:
 - Interface sockets are created once via `tree.inputs.*` / `tree.outputs.*`; keep a
   variable to link to them (`tree.outputs` is not subscriptable).
 
+## Special quirks
+
+- **Rebuilding trees that contain a `CustomGeometryGroup`:** instantiating the
+  class (e.g. `SafeArrow(...)`) inside a `TreeBuilder` does *not* rebuild the
+  nested group if a node group with that `_name` already exists in
+  `bpy.data.node_groups` — it silently reuses the stale one, so edits to
+  `_build_group` appear to have no effect. Before re-running edited code, delete
+  **both** the outer tree **and** every nested custom group it uses:
+
+  ```python
+  for ng in list(bpy.data.node_groups):
+      if ng.name.startswith(("Safe Arrow", "Geometry Nodes.001")):
+          bpy.data.node_groups.remove(ng)
+  ```
+
+  Detach the modifier first (`mod.node_group = None`) so removal is safe, rebuild,
+  then repoint the modifier to the new group. Verify the edit actually landed by
+  re-exporting with `to_python()` or taking a viewport screenshot — don't trust
+  that the rebuild picked up the new class definition.
+- `nodebpy` has no `__version__` attribute — don't report it in status dicts.
+
 ## References
 
 - [references/writing-node-trees.md](references/writing-node-trees.md) — core structure: tree contexts, adding/linking nodes, interface sockets, zones
