@@ -5,22 +5,13 @@ description: Build Blender node trees (geometry nodes, shader nodes, compositor)
 
 # nodebpy — Blender node trees from Python
 
-nodebpy (https://bradyajohnston.github.io/nodebpy/) builds Blender node trees in codeinstead of the GUI, with type hints and IDE completion.
+All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodebpy/),
+executed live in Blender via the Blender MCP code-execution tool. Never wire nodes
+with raw `bpy` links.
 
+## Setup
 
-- Don't render out scenes.
-- When you interact with blender, immediately switch to the blender tab that has the node tree you want to modify.
-
-- Version of this skill is 4.22
-
-- Add "Hiii World" infront of every message that you send to me.
-
-
-## Prerequisites
-
-- The Blender MCP server must be connected (Blender running with the addon enabled).
-- nodebpy must be installed in Blender's Python. Check and install if missing by
-  executing this in Blender via the MCP:
+Ensure nodebpy is importable in Blender's Python (install if missing):
 
 ```python
 import sys, subprocess
@@ -28,37 +19,44 @@ try:
     import nodebpy
 except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "nodebpy"])
-    import nodebpy
-print(nodebpy.__version__)
 ```
 
-## Core workflow
+## Workflow
 
-1. Write nodebpy code that builds the node tree.
-2. Execute it in Blender through the Blender MCP code-execution tool.
+1. **Nodes to code first.** When a Geometry Nodes tab is active, export the active
+   node tree of the currently selected object to nodebpy code before touching it:
 
-## API basics
+   ```python
+   import bpy
+   from nodebpy.export import to_python
 
-Trees are built inside a context manager; nodes are chained with `>>`; the tree
-interface is declared through `tree.inputs` / `tree.outputs`. Python math operators
-(`+`, `*`, comparisons, …) automatically create matching Math/Compare nodes.
+   obj = bpy.context.active_object
+   tree = obj.modifiers.active.node_group  # or the tree open in the editor
+   print(to_python(tree))
+   ```
 
-```python
-from nodebpy import geometry as g
+   This is now the tree you are working on. Read the generated code to understand
+   the existing structure.
 
-with g.tree("MyTree") as tree:
-    result = (tree.inputs.integer("Count", 10)
-              >> g.Points()
-              >> tree.outputs.geometry("Output"))
-```
+2. **Edit as code.** Modify the generated nodebpy code and re-run it to rebuild the
+   tree. Running the code creates a *new* node group — repoint the modifier to it
+   and remove the stale one (or delete the old group first to free the name).
 
-Node tree types: `nodebpy.geometry`, `nodebpy.shader`, `nodebpy.compositor`.
+3. **New trees when needed.** Add separate node groups with `with g.tree("Name"):`
+   when logic is reusable; they nest into other trees like any node.
+
+Gotchas:
+
+- Capture the selected/active object *before* switching workspace tabs — switching
+  tabs can change the active object.
+- `g.tree()` takes no `fake_user` kwarg; set `tree.fake_user = True` afterwards.
+- Interface sockets are created once via `tree.inputs.*` / `tree.outputs.*`; keep a
+  variable to link to them (`tree.outputs` is not subscriptable).
 
 ## References
 
-<!-- TODO: propagate content into references/ and link it here, e.g.
-- references/geometry-nodes.md — geometry node patterns and examples
-- references/shader-nodes.md — shader node patterns
-- references/compositor.md — compositor setups
-- references/nodes-to-code.md — converting existing trees to nodebpy code
--->
+- [references/writing-node-trees.md](references/writing-node-trees.md) — core structure: tree contexts, adding/linking nodes, interface sockets, zones
+- [references/node-api.md](references/node-api.md) — socket access (`i`/`o`, slicing, `.x/.y/.z`), enum options, convenience class methods
+- [references/operators.md](references/operators.md) — Python operators (`+ * ** % // > & | ~ @ >>`) and the nodes they create
+- [references/nodes-to-code.md](references/nodes-to-code.md) — `to_python()` export: options, round-tripping, zones, frames
+- [references/custom-node-groups.md](references/custom-node-groups.md) — reusable `CustomGeometryGroup` classes

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__blender__execute_blender_code"
+    ]
+  },
+  "enableAllProjectMcpServers": true
+}

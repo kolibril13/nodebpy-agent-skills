@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "blender": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/jan-hendrik/blender_mcp/mcp",
+        "blender-mcp"
+      ]
+    }
+  }
+}
