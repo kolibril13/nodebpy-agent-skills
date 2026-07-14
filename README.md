@@ -6,15 +6,20 @@ via the [Blender MCP](https://github.com/ahujasid/blender-mcp).
 
 ## Install
 
-Inside Claude Code (only works in the CLI version, not in the destop app):
+# Desktop App:
+Type:
+```
+https://github.com/kolibril13/nodebpy-agent-skills - Please load this skill onto the current conversation
+```
 
-![alt text](image.png)
+# Claude Code CLI:
 
 ```
 /plugin marketplace add kolibril13/nodebpy-agent-skills
 /plugin install nodebpy@nodebpy-agent-skills
 ```
 
+# Local development of this skill:
 For local development (picks up your edits from this checkout, chance /Users/jan-hendrik to your path ):
 
 ```
@@ -23,7 +28,6 @@ For local development (picks up your edits from this checkout, chance /Users/jan
 ```
 
 ## Structure
-
 ```
 .claude-plugin/
   marketplace.json   # marketplace listing (this repo is its own marketplace)
