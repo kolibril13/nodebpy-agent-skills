@@ -53,8 +53,6 @@ except ImportError:
 
 Gotchas:
 
-- Capture the selected/active object *before* switching workspace tabs — switching
-  tabs can change the active object.
 - `with g.tree(...) as tree` yields a `TreeBuilder`, not the underlying
   `bpy.types.NodeTree`. Anything that needs a real ID datablock — assigning to a
   modifier, `bpy.data.node_groups` lookups — needs the unwrapped tree:
