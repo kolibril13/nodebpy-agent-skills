@@ -26,12 +26,14 @@ A custom node group class has four parts:
 ```python
 class MyNode(CustomGeometryGroup):
     _name = "My Node"  # 1. Name
+    _color_tag = "CONVERTER"  # 2. Header color (optional, see Class Options below)
 
-    def __init__(self, value: float = 0.0):  # 3. Constructor
+    def __init__(self, value: InputFloat = 0.0):  # 3. Constructor
         super().__init__(value=value)
 
     def _build_group(self, tree):  # 4. Graph logic
-        return (value + g.Value(1.0)) >> tree.ouptuts.float()
+        value = tree.inputs.float("Value", 0.0)
+        (value + g.Value(1.0)) >> tree.outputs.float("Value")
 ```
 
 ### 1. `_name`

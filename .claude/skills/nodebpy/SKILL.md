@@ -7,7 +7,14 @@ description: Build Blender node trees (geometry nodes, shader nodes, compositor)
 
 All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodebpy/),
 executed live in Blender via the Blender MCP code-execution tool. Never wire nodes
-with raw `bpy` links.
+with raw `bpy` links — `nodebpy` owns tree *construction and linking*.
+
+Property edits on existing nodes are a different concern and raw `bpy` is fine for
+them — e.g. renaming a shader `Attribute` node's `attribute_name`, or restyling a
+`ColorRamp`'s stops. This matters especially for shader/material trees, since the
+skill's `from nodebpy import geometry as g` surface targets geometry-node trees;
+retuning an existing shader node's properties directly is simpler than modeling
+the whole material in nodebpy.
 
 ## Setup
 
@@ -36,7 +43,14 @@ except ImportError:
    ```
 
    This is now the tree you are working on. Read the generated code to understand
-   the existing structure.
+   the existing structure. If a node has no `nodebpy` emitter, `to_python()` raises
+   by default — pass `strict=False` to instead emit a placeholder and keep going,
+   and grep the result for `TODO: unsupported` before trusting the round-trip:
+
+   ```python
+   code = to_python(tree, strict=False)
+   assert "TODO: unsupported" not in code, "unsupported node(s) — check manually"
+   ```
 
 2. **Edit as code.** Modify the generated nodebpy code and re-run it to rebuild the
    tree. Running the code creates a *new* node group — repoint the modifier to it
@@ -71,12 +85,17 @@ Gotchas:
   class (e.g. `SafeArrow(...)`) inside a `TreeBuilder` does *not* rebuild the
   nested group if a node group with that `_name` already exists in
   `bpy.data.node_groups` — it silently reuses the stale one, so edits to
-  `_build_group` appear to have no effect. Before re-running edited code, delete
-  **both** the outer tree **and** every nested custom group it uses:
+  `_build_group` appear to have no effect.
+
+  This reuse is a **feature, not a hazard** when the nested group is unchanged:
+  leaving it in place preserves any external references to it and avoids
+  re-verifying groups you didn't touch. The hazard is only when you *edited* a
+  class and forget to delete its cached group. So delete narrowly — only the
+  outer tree, plus only the nested groups whose `_build_group` actually changed:
 
   ```python
   for ng in list(bpy.data.node_groups):
-      if ng.name.startswith(("Safe Arrow", "Geometry Nodes.001")):
+      if ng.name in ("Geometry Nodes", "Safe Arrow"):  # outer tree + only the edited nested group(s)
           bpy.data.node_groups.remove(ng)
   ```
 
@@ -100,10 +119,28 @@ Gotchas:
   Get the `Socket_N` identifier for a given input name from
   `tree.interface.items_tree` (match on `.name`, read `.identifier`) — don't assume
   numbering matches declaration order.
+
 - `render_viewport_to_path`'s `output_path` argument is not authoritative — Blender
   may write the file to its own temp location and return the real path in the
   result. Only relevant if a render is explicitly requested (see Workflow step 4);
   read the returned `filepath`, not the one passed in.
+- **Rebuilding a tree that contains a `SimulationZone` orphans the sim cache.**
+  Rebuilding always creates a new tree datablock, even if it has the same name as
+  the old one — the simulation cache is tied to the old datablock, so playback
+  will re-simulate from the scene's start frame on the next frame change. This is
+  expected, not a bug; just don't be surprised the timeline "resets."
+- **Modifier input values don't survive a rebuild** unless you carry them over
+  manually. If the modifier has exposed inputs (`mod.properties.inputs`), read
+  them before detaching and reapply them after repointing to the new tree:
+
+  ```python
+  before = {k: v.value for k, v in mod.properties.inputs.items()}
+  mod.node_group = None
+  # ...rebuild...
+  mod.node_group = tree.tree
+  for k, v in before.items():
+      mod.properties.inputs[k].value = v
+  ```
 
 ## References
 
@@ -112,3 +149,5 @@ Gotchas:
 - [references/operators.md](references/operators.md) — Python operators (`+ * ** % // > & | ~ @ >>`) and the nodes they create
 - [references/nodes-to-code.md](references/nodes-to-code.md) — `to_python()` export: options, round-tripping, zones, frames
 - [references/custom-node-groups.md](references/custom-node-groups.md) — reusable `CustomGeometryGroup` classes
+- [references/scene-recon.md](references/scene-recon.md) — orienting in an unfamiliar scene: objects, modifiers, node groups, evaluated attributes
+- [references/attribute-driven-color.md](references/attribute-driven-color.md) — pattern for coloring instanced geometry (e.g. particles) by a stored attribute
