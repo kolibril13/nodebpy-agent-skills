@@ -23,8 +23,8 @@ except ImportError:
 
 ## Workflow
 
-1. **Nodes to code first.** When a Geometry Nodes tab is active, export the active
-   node tree of the currently selected object to nodebpy code before touching it:
+1. **Nodes to code first.** Assume the node tree is already open and on screen for
+   the currently selected object. Export it to nodebpy code before touching it:
 
    ```python
    import bpy
@@ -45,11 +45,25 @@ except ImportError:
 3. **New trees when needed.** Add separate node groups with `with g.tree("Name"):`
    when logic is reusable; they nest into other trees like any node.
 
+4. **Never render or screenshot to verify work.** Building and wiring the tree is
+   the deliverable; rendering is slow and not needed to confirm correctness.
+   Verify instead by re-exporting with `to_python()`, or by inspecting
+   `tree.tree.nodes` / `.links` / socket `default_value`s directly. Only render or
+   take a screenshot if the user explicitly asks to see an image.
+
 Gotchas:
 
 - Capture the selected/active object *before* switching workspace tabs — switching
   tabs can change the active object.
-- `g.tree()` takes no `fake_user` kwarg; set `tree.fake_user = True` afterwards.
+- `with g.tree(...) as tree` yields a `TreeBuilder`, not the underlying
+  `bpy.types.NodeTree`. Anything that needs a real ID datablock — assigning to a
+  modifier, `bpy.data.node_groups` lookups — needs the unwrapped tree:
+  `modifier.node_group = tree` raises `TypeError: expected a NodeTree type, not
+  TreeBuilder`; use `modifier.node_group = tree.tree` instead.
+- `g.tree()` takes no `fake_user` kwarg. `tree.fake_user = True` on the *builder*
+  works. If you've already unwrapped via `tree.tree`, that's a plain bpy ID and
+  needs its real property name instead: `tree.tree.use_fake_user = True`
+  (`.fake_user` doesn't exist on it and raises `AttributeError`).
 - Interface sockets are created once via `tree.inputs.*` / `tree.outputs.*`; keep a
   variable to link to them (`tree.outputs` is not subscriptable).
 
@@ -70,9 +84,28 @@ Gotchas:
 
   Detach the modifier first (`mod.node_group = None`) so removal is safe, rebuild,
   then repoint the modifier to the new group. Verify the edit actually landed by
-  re-exporting with `to_python()` or taking a viewport screenshot — don't trust
-  that the rebuild picked up the new class definition.
+  re-exporting with `to_python()` — don't trust that the rebuild picked up the new
+  class definition.
 - `nodebpy` has no `__version__` attribute — don't report it in status dicts.
+- **Setting a Geometry Nodes modifier's input values from Python** (e.g. to drive
+  test values into a tree without rendering): the classic `mod["Socket_0"] = value`
+  raises `TypeError: id properties not supported for this type` on recent Blender
+  (5.x). Inputs live under `mod.properties.inputs`, and each socket is a wrapper —
+  read/write through `.value`:
+
+  ```python
+  inputs = mod.properties.inputs
+  inputs.Socket_0.value = (0.0, 0.0, 0.0)   # vector socket
+  inputs.Socket_2.value = 0.05              # float socket
+  ```
+
+  Get the `Socket_N` identifier for a given input name from
+  `tree.interface.items_tree` (match on `.name`, read `.identifier`) — don't assume
+  numbering matches declaration order.
+- `render_viewport_to_path`'s `output_path` argument is not authoritative — Blender
+  may write the file to its own temp location and return the real path in the
+  result. Only relevant if a render is explicitly requested (see Workflow step 4);
+  read the returned `filepath`, not the one passed in.
 
 ## References
 
