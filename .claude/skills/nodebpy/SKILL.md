@@ -103,6 +103,10 @@ Gotchas:
   then repoint the modifier to the new group. Verify the edit actually landed by
   re-exporting with `to_python()` — don't trust that the rebuild picked up the new
   class definition.
+- **Grafting nodes into an existing tree:** place the new node between the two
+  nodes it links to (midpoint of upstream and downstream partner). Compute this
+  in absolute coords: nodes inside a node frame store `.location` relative to that frame — and frames nest — so sum `.location` up the `.parent` chain first.
+
 - `nodebpy` has no `__version__` attribute — don't report it in status dicts.
 - **Setting a Geometry Nodes modifier's input values from Python** (e.g. to drive
   test values into a tree without rendering): the classic `mod["Socket_0"] = value`
