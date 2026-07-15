@@ -52,6 +52,11 @@ except ImportError:
    assert "TODO: unsupported" not in code, "unsupported node(s) — check manually"
    ```
 
+   Also check `tree.animation_data` before deciding to rebuild: keyframes on
+   node defaults (e.g. an animated Mix factor) live on the tree datablock and are
+   destroyed by a rebuild. If fcurves exist, don't rebuild — graft the change
+   into the existing tree instead.
+
 2. **Edit as code.** Modify the generated nodebpy code and re-run it to rebuild the
    tree. Running the code creates a *new* node group — repoint the modifier to it
    and remove the stale one (or delete the old group first to free the name).
