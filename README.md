@@ -1,41 +1,73 @@
-# nodebpy-agent-skills
+# nodebpy agent skill
 
-Claude Code skills for building Blender node trees (geometry, shader, compositor)
-with [nodebpy](https://bradyajohnston.github.io/nodebpy/), executed live in Blender
-via the [Blender MCP](https://github.com/ahujasid/blender-mcp).
+Build and edit Blender Geometry Nodes, shader nodes, and compositor trees with
+[nodebpy](https://bradyajohnston.github.io/nodebpy/). The skill gives coding
+agents a focused workflow for inspecting node trees, generating nodebpy code,
+and executing changes live through the
+[Blender MCP](https://github.com/ahujasid/blender-mcp).
 
-## Install
+## Quick start
 
-# Desktop App:
-Type:
-```
-https://github.com/kolibril13/nodebpy-agent-skills - Please load this skill onto the current conversation
-```
+1. Download this repository as a ZIP.
+2. Open your current project in Codex or Claude.
+3. Attach the ZIP and say: **“Load this into my current project.”**
 
-# Claude Code CLI:
+The skill is intentionally installed at project level. This keeps its behavior,
+references, and Blender conventions versioned alongside the project that uses
+them.
 
-```
+## Requirements
+
+- [Blender](https://www.blender.org/)
+- [nodebpy](https://bradyajohnston.github.io/nodebpy/)
+- [Blender MCP](https://github.com/ahujasid/blender-mcp)
+- [uv](https://docs.astral.sh/uv/)
+
+This repository expects the Blender MCP checkout at `$HOME/blender_mcp/mcp`.
+If yours lives elsewhere, update `.mcp.json` for Claude and `.codex/config.toml`
+for Codex.
+
+## Claude Code plugin installation
+
+You can also install the repository directly as a Claude Code plugin:
+
+```text
 /plugin marketplace add kolibril13/nodebpy-agent-skills
 /plugin install nodebpy@nodebpy-agent-skills
 ```
 
-# Local development of this skill:
-For local development (picks up your edits from this checkout, chance /Users/jan-hendrik to your path ):
+For local plugin development, add the path to your checkout instead of the
+GitHub repository name.
 
-```
-/plugin marketplace add /Users/jan-hendrik/projects/nodebpy-agent-skills
-/plugin install nodebpy@nodebpy-agent-skills
-```
+## Skill development
 
-## Structure
-```
-.claude-plugin/
-  marketplace.json   # marketplace listing (this repo is its own marketplace)
-  plugin.json        # plugin metadata
-skills/
-  nodebpy/
-    SKILL.md         # main skill; add references/ files next to it as content grows
+`.agents/skills` is the canonical source of truth. The Claude-specific skill
+directory contains generated relative symlinks to it; do not edit skills through
+`.claude/skills`.
+
+After adding, removing, or renaming a skill, regenerate the Claude links:
+
+```bash
+uv run sync_skills.py
 ```
 
-Skills in `skills/` are auto-discovered — add a new folder with a `SKILL.md` to add
-a skill, no registration needed.
+To check for drift without writing files:
+
+```bash
+uv run sync_skills.py --check
+```
+
+Each top-level skill directory must contain a `SKILL.md` with `name` and
+`description` frontmatter. The sync script validates that structure before it
+creates any links.
+
+## Repository layout
+
+```text
+.agents/skills/nodebpy/    Canonical skill and reference files
+.claude/skills/            Generated links to canonical skills
+.claude-plugin/            Claude Code plugin metadata
+.codex/config.toml         Codex Blender MCP configuration
+.mcp.json                  Claude Blender MCP configuration
+sync_skills.py             Validation and synchronization script
+```

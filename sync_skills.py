@@ -4,11 +4,12 @@
 # dependencies = []
 # ///
 
-"""Copy canonical agent skills into Claude's generated skills directory."""
+"""Link canonical agent skills into Claude's project skill directory."""
 
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import sys
@@ -18,9 +19,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DEFAULT_SOURCE = ROOT / ".agents" / "skills"
 DEFAULT_TARGET = ROOT / ".claude" / "skills"
+NOTICE_NAME = "README.md"
+NOTICE = """# Linked skills
+
+Do not edit skills through this directory. Each skill is a generated symlink;
+edit the canonical files in `.agents/skills` instead.
+"""
 
 
-def validate(source: Path) -> None:
+def validate(source: Path) -> list[Path]:
     if not source.is_dir():
         raise ValueError(f"source directory does not exist: {source}")
 
@@ -49,19 +56,30 @@ def validate(source: Path) -> None:
                 f"skill name must match its directory: {skill.name!r} ({manifest})"
             )
 
-    symlinks = [path for path in source.rglob("*") if path.is_symlink()]
-    if symlinks:
-        raise ValueError(f"canonical skills must not contain symlinks: {symlinks[0]}")
+    return skills
 
 
-def snapshot(directory: Path) -> dict[Path, bytes]:
-    if not directory.exists():
-        return {}
-    return {
-        path.relative_to(directory): path.read_bytes()
-        for path in directory.rglob("*")
-        if path.is_file()
-    }
+def relative_link(skill: Path, target: Path) -> Path:
+    return Path(os.path.relpath(skill, start=target))
+
+
+def is_in_sync(skills: list[Path], target: Path) -> bool:
+    if not target.is_dir() or target.is_symlink():
+        return False
+
+    expected_names = {skill.name for skill in skills} | {NOTICE_NAME}
+    if {path.name for path in target.iterdir()} != expected_names:
+        return False
+
+    notice = target / NOTICE_NAME
+    if not notice.is_file() or notice.read_text(encoding="utf-8") != NOTICE:
+        return False
+
+    return all(
+        (target / skill.name).is_symlink()
+        and (target / skill.name).readlink() == relative_link(skill, target)
+        for skill in skills
+    )
 
 
 def main() -> int:
@@ -71,7 +89,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="exit non-zero when the generated target is out of date",
+        help="exit non-zero when the generated links are out of date",
     )
     args = parser.parse_args()
 
@@ -79,25 +97,32 @@ def main() -> int:
     target = args.target.resolve()
 
     try:
-        validate(source)
+        skills = validate(source)
+        synced = is_in_sync(skills, target)
     except (OSError, UnicodeError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 
-    if snapshot(source) == snapshot(target):
-        print(f"Skills are in sync: {target}")
+    if synced:
+        print(f"Skill links are in sync: {target}")
         return 0
 
     if args.check:
-        print(f"Skills are out of sync: {target}", file=sys.stderr)
+        print(f"Skill links are out of sync: {target}", file=sys.stderr)
         return 1
 
-    # The target is generated output; replacing it also removes stale skill files.
-    if target.exists():
+    if target.is_symlink() or target.is_file():
+        target.unlink()
+    elif target.exists():
         shutil.rmtree(target)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source, target)
-    print(f"Synced {source} -> {target}")
+
+    target.mkdir(parents=True)
+    (target / NOTICE_NAME).write_text(NOTICE, encoding="utf-8")
+    for skill in skills:
+        link = target / skill.name
+        link.symlink_to(relative_link(skill, target), target_is_directory=True)
+
+    print(f"Linked {len(skills)} skill(s): {source} -> {target}")
     return 0
 
 
