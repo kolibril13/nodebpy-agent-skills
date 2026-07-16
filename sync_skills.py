@@ -4,6 +4,9 @@
 # dependencies = []
 # ///
 
+
+# run via uv run ```sync_skills.py````
+
 """Link canonical agent skills into Claude's project skill directory."""
 
 from __future__ import annotations
@@ -19,12 +22,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DEFAULT_SOURCE = ROOT / ".agents" / "skills"
 DEFAULT_TARGET = ROOT / ".claude" / "skills"
-NOTICE_NAME = "README.md"
-NOTICE = """# Linked skills
-
-Do not edit skills through this directory. Each skill is a generated symlink;
-edit the canonical files in `.agents/skills` instead.
-"""
 
 
 def validate(source: Path) -> list[Path]:
@@ -67,12 +64,8 @@ def is_in_sync(skills: list[Path], target: Path) -> bool:
     if not target.is_dir() or target.is_symlink():
         return False
 
-    expected_names = {skill.name for skill in skills} | {NOTICE_NAME}
+    expected_names = {skill.name for skill in skills}
     if {path.name for path in target.iterdir()} != expected_names:
-        return False
-
-    notice = target / NOTICE_NAME
-    if not notice.is_file() or notice.read_text(encoding="utf-8") != NOTICE:
         return False
 
     return all(
@@ -117,7 +110,6 @@ def main() -> int:
         shutil.rmtree(target)
 
     target.mkdir(parents=True)
-    (target / NOTICE_NAME).write_text(NOTICE, encoding="utf-8")
     for skill in skills:
         link = target / skill.name
         link.symlink_to(relative_link(skill, target), target_is_directory=True)
