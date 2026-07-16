@@ -38,21 +38,12 @@ _DEFAULT_RESPONSE_TIMEOUT = 30.0
 _DEFAULT_MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _RECV_BUFFER_SIZE = 65536
 _SEND_LOCK = threading.Lock()
-_COMPACT_INSTRUCTIONS = """\
-Use these tools to inspect and edit the connected Blender session. Inspect first,
-preserve existing names and structure, and prefer a specific tool over arbitrary
-Python. Start general scene questions with get_current_scene_summary; keep later
-reads focused instead of dumping large scenes.
-
-Treat mutations as potentially destructive. Do not delete, overwrite, apply, or
-irreversibly change data without clear user intent. Check active object, selection,
-and mode before context-dependent operators; operators may change all three. Shared
-datablocks affect every user, so inspect user counts before editing them.
-
-For execute_blender_code, assign JSON-serializable dicts/lists to `result`; do not
-rely on printed output. Consult the bundled API/manual search tools when an API is
-uncertain. After edits, update the dependency graph before reading evaluated data.
-"""
+_COMPACT_INSTRUCTIONS = (
+    "Use the connected interactive Blender. For a scene overview call "
+    "get_current_scene_summary. Prefer dedicated tools; use Python only when "
+    "needed and return JSON in result. Inspect before destructive changes and "
+    "preserve existing data unless the user requests otherwise."
+)
 _UPSTREAM_FAST_MCP = blmcp.FastMCP
 
 

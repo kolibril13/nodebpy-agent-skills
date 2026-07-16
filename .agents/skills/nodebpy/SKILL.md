@@ -7,36 +7,18 @@ description: Build Blender node trees (geometry nodes, shader nodes, compositor)
 
 All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodebpy/) via the Blender MCP.
 
-## Fast path and repository scope
+## Runtime and repository scope
 
-This skill is runtime-oriented: the target is the currently connected Blender
-session, not this skill repository. Start with the Blender MCP connection and
-the active Blender tree. Do not recursively inspect the repository first.
-
-### Connection gate
-
-- Make the required Blender MCP call directly; that call is the connection
-  check. Do not run a shell probe or search the repository first.
-- If the MCP call fails, report its error. Do not start shell diagnostics,
-  rediscover the server, or try an alternate transport.
-- Serialize all Blender MCP calls. Never call Blender MCP concurrently or from
-  subagents.
-- Never blindly retry a mutation after it was sent or after an ambiguous
-  timeout.
-- In an interactive Blender session, do not use `*_for_cli` tools.
-
-For MCP client configuration, run `scripts/blender_mcp_fast_server.py` with the
-official Blender MCP environment's Python interpreter as the fail-fast
-launcher.
+Work against the connected Blender session, not this repository. Call Blender
+MCP directly and serially, never from subagents. On failure, report the MCP
+error without probing, searching, retrying, or changing transports. Never retry
+an ambiguous mutation or use `*_for_cli` with interactive Blender.
 
 Read only the task-relevant skill references after the active tree is known.
 In particular, do not open or analyze `sync_skills.py`, generated symlinks,
 plugin metadata, Git history, or README files unless the user explicitly asks
 about skill packaging or repository maintenance. Those files do not affect the
 node tree in Blender.
-
-If the Blender MCP tools are not visible, do not spend time scanning the repo
-to rediscover them or running shell diagnostics. Report the connection blocker.
 
 For repository reading, treat the task's named files and the selected skill's
 direct references as the allowlist. Everything else is out of scope by
@@ -48,6 +30,37 @@ Never wire nodes with raw `bpy` links — `nodebpy` owns tree *construction and 
 Property edits on existing nodes with raw `bpy` is fine e.g.
 - renaming a shader `Attribute` node's `attribute_name`
 - restyling a `ColorRamp`'s stops. 
+
+## Node-group conventions
+
+- **Prefer reusable node groups.** When the logic can be reused or has more
+  than a trivial number of nodes, encapsulate it in a node group and expose
+  only the useful controls through group inputs.
+- **Give exposed inputs reasonable defaults.** Choose useful values, ranges,
+  and labels so the group works immediately after insertion. Keep defaults
+  close to the nodebpy interface declaration, for example:
+
+  ```python
+  scale = tree.inputs.float("Scale", 6.0, min_value=0.1, max_value=50.0)
+  color = tree.inputs.color("Color", (1.0, 0.0, 0.0, 1.0))
+  ```
+
+- **Hide node option buttons by default.** After constructing a tree, hide the
+  option-button strip unless the user explicitly asks to show it:
+
+  ```python
+  for node in tree.tree.nodes:
+      node.show_options = False
+  ```
+
+  This is a display property on the Blender nodes; using raw `bpy` for this
+  property edit is allowed. Apply it to the parent material/geometry tree as
+  well as to newly created group nodes when appropriate.
+- **Set the node-group color tag to match the group’s purpose.** Do not leave
+  it at `NONE`: use `SHADER` for shader groups, `GEOMETRY` for geometry groups,
+  `TEXTURE` for texture-oriented groups, `VECTOR` for vector utilities, and
+  the closest matching tag for other specialized groups. Set it on the real
+  node tree after construction, e.g. `tree.tree.color_tag = "SHADER"`.
 
 ## Workflow
 
