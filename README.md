@@ -3,8 +3,7 @@
 Build and edit Blender Geometry Nodes, shader nodes, and compositor trees with
 [nodebpy](https://bradyajohnston.github.io/nodebpy/). The skill gives coding
 agents a focused workflow for inspecting node trees, generating nodebpy code,
-and executing changes live through the
-[Blender MCP](https://github.com/ahujasid/blender-mcp).
+and executing changes live through the [Blender MCP](https://projects.blender.org/lab/blender_mcp).
 
 ## Quick start
 
@@ -12,22 +11,20 @@ and executing changes live through the
 2. Open your current project in Codex or Claude.
 3. Attach the ZIP and say: **“Load this into my current project.”**
 
-The skill is intentionally installed at project level. This keeps its behavior,
-references, and Blender conventions versioned alongside the project that uses
-them.
+The skill is installed at project level. 
+This keeps its behavior, references, and Blender conventions versioned alongside the project that uses them.
 
 ## Requirements
 
 - [Blender](https://www.blender.org/)
-- [nodebpy](https://bradyajohnston.github.io/nodebpy/)
-- [Blender MCP](https://github.com/ahujasid/blender-mcp)
+- [Blender MCP](https://projects.blender.org/lab/blender_mcp)
 - [uv](https://docs.astral.sh/uv/)
 
 This repository expects the Blender MCP checkout at `$HOME/blender_mcp/mcp`.
 If yours lives elsewhere, update `.mcp.json` for Claude and `.codex/config.toml`
 for Codex.
 
-## Claude Code plugin installation
+## Claude Code CLI plugin installation
 
 You can also install the repository directly as a Claude Code plugin:
 
@@ -35,9 +32,6 @@ You can also install the repository directly as a Claude Code plugin:
 /plugin marketplace add kolibril13/nodebpy-agent-skills
 /plugin install nodebpy@nodebpy-agent-skills
 ```
-
-For local plugin development, add the path to your checkout instead of the
-GitHub repository name.
 
 ## Skill development
 
@@ -49,25 +43,4 @@ After adding, removing, or renaming a skill, regenerate the Claude links:
 
 ```bash
 uv run sync_skills.py
-```
-
-To check for drift without writing files:
-
-```bash
-uv run sync_skills.py --check
-```
-
-Each top-level skill directory must contain a `SKILL.md` with `name` and
-`description` frontmatter. The sync script validates that structure before it
-creates any links.
-
-## Repository layout
-
-```text
-.agents/skills/nodebpy/    Canonical skill and reference files
-.claude/skills/            Generated links to canonical skills
-.claude-plugin/            Claude Code plugin metadata
-.codex/config.toml         Codex Blender MCP configuration
-.mcp.json                  Claude Blender MCP configuration
-sync_skills.py             Validation and synchronization script
 ```
