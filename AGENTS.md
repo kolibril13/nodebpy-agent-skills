@@ -8,7 +8,8 @@ or "summarize the current scene," call the configured Blender MCP
 is the connection check. Do not load the nodebpy skill, search memory or the
 repository, run a shell command, or run a separate connection probe first.
 
-Only enter connection diagnostics after that direct MCP call fails.
+If that direct MCP call fails, report its MCP error. Do not search the
+repository, run a shell connection probe, or try an alternate transport.
 
 ## Default scope
 

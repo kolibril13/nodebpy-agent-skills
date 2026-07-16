@@ -1,6 +1,6 @@
 ---
 name: nodebpy
-description: Build Blender node trees (geometry nodes, shader nodes, compositor) programmatically with the nodebpy Python library, executed via the Blender MCP. Use when the user wants to create or modify Blender node setups, geometry nodes, shaders, or compositor trees.
+description: Build Blender node trees (geometry nodes, shader nodes, compositor) programmatically with the nodebpy Python library, executed via the Blender MCP. Use when the user wants to create or modify Blender node setups, geometry nodes, shaders, or compositor trees. Do not use for generic scene inspection or scene summaries; call the configured scene-summary MCP tool directly.
 ---
 
 # nodebpy — Blender node trees from Python
@@ -15,26 +15,19 @@ the active Blender tree. Do not recursively inspect the repository first.
 
 ### Connection gate
 
-Resolve the script paths below relative to this `SKILL.md`.
-
-- Make the required Blender MCP call directly; that call is the routine
-  connection check. Do not run `scripts/blender_mcp_doctor.py` as a preflight.
-- Run `python3 scripts/blender_mcp_doctor.py` only after an actual Blender MCP
-  connection failure or when the user explicitly requests diagnostics. Its
-  default is one attempt. Add `--wait SECONDS` only when deliberately waiting
-  for Blender or the bridge to become ready.
+- Make the required Blender MCP call directly; that call is the connection
+  check. Do not run a shell probe or search the repository first.
+- If the MCP call fails, report its error. Do not start shell diagnostics,
+  rediscover the server, or try an alternate transport.
 - Serialize all Blender MCP calls. Never call Blender MCP concurrently or from
   subagents.
-- After diagnostics confirm recovery, retry a failed read-only call at most
-  once. Never blindly retry a mutation after it was sent or after an ambiguous
-  timeout; inspect state before deciding what to do next.
+- Never blindly retry a mutation after it was sent or after an ambiguous
+  timeout.
 - In an interactive Blender session, do not use `*_for_cli` tools.
 
 For MCP client configuration, run `scripts/blender_mcp_fast_server.py` with the
 official Blender MCP environment's Python interpreter as the fail-fast
-launcher. Use `python3 scripts/blender_mcp_tune.py --apply` only when the user
-asks to persist the official add-on's low-latency polling settings; omit
-`--apply` to inspect the current values.
+launcher.
 
 Read only the task-relevant skill references after the active tree is known.
 In particular, do not open or analyze `sync_skills.py`, generated symlinks,
@@ -43,9 +36,7 @@ about skill packaging or repository maintenance. Those files do not affect the
 node tree in Blender.
 
 If the Blender MCP tools are not visible, do not spend time scanning the repo
-to rediscover them. Check the configured MCP server once, then report the
-connection blocker or use the explicitly configured local Blender connection
-if the environment provides one.
+to rediscover them or running shell diagnostics. Report the connection blocker.
 
 For repository reading, treat the task's named files and the selected skill's
 direct references as the allowlist. Everything else is out of scope by
@@ -65,10 +56,9 @@ Minimize Blender MCP latency
 - No verification of the edit result. 
 - Extra calls only after an error or when the initial read leaves the requested change ambiguous.
 
-Do not add exploratory shell calls between MCP calls unless they are needed to
-resolve an actual connection or import error. Most observed latency variance
-comes from MCP/session startup and Blender-side execution, not from nodebpy
-tree construction.
+Do not add exploratory shell calls between MCP calls. Most observed latency
+variance comes from MCP/session startup and Blender-side execution, not from
+nodebpy tree construction.
 
 1. **Nodes to code first.** Assume the node tree is already open and on screen for
    the currently selected object. Export it to nodebpy code:
