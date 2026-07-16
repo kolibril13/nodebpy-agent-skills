@@ -26,6 +26,7 @@ import math
 import os
 import socket
 import threading
+from typing import Any
 
 import blmcp
 from blmcp.tools_helpers import connection as _connection
@@ -36,6 +37,26 @@ _DEFAULT_RESPONSE_TIMEOUT = 30.0
 _DEFAULT_MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _RECV_BUFFER_SIZE = 65536
 _SEND_LOCK = threading.Lock()
+_LOCAL_TOOLS_DIRECTORY = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "blender_mcp_tools",
+)
+_COMPACT_INSTRUCTIONS = """\
+Use these tools to inspect and edit the connected Blender session. Inspect first,
+preserve existing names and structure, and prefer a specific tool over arbitrary
+Python. Start general scene questions with get_current_scene_summary; keep later
+reads focused instead of dumping large scenes.
+
+Treat mutations as potentially destructive. Do not delete, overwrite, apply, or
+irreversibly change data without clear user intent. Check active object, selection,
+and mode before context-dependent operators; operators may change all three. Shared
+datablocks affect every user, so inspect user counts before editing them.
+
+For execute_blender_code, assign JSON-serializable dicts/lists to `result`; do not
+rely on printed output. Consult the bundled API/manual search tools when an API is
+uncertain. After edits, update the dependency graph before reading evaluated data.
+"""
+_UPSTREAM_FAST_MCP = blmcp.FastMCP
 
 
 class _NormalizedConnectionError(ConnectionError):
@@ -187,9 +208,32 @@ def _send_code(code: str, strict_json: bool) -> dict[str, object]:
         _SEND_LOCK.release()
 
 
+def _fast_mcp_with_compact_instructions(*args: Any, **kwargs: Any) -> Any:
+    """Construct upstream FastMCP with a small Blender-specific system prompt."""
+    kwargs["instructions"] = _COMPACT_INSTRUCTIONS
+    return _UPSTREAM_FAST_MCP(*args, **kwargs)
+
+
+def _configure_local_tools() -> None:
+    """Expose launcher-owned tools through upstream's normal auto-discovery."""
+    if not os.path.isdir(_LOCAL_TOOLS_DIRECTORY):
+        raise RuntimeError(
+            "Local Blender MCP tools directory is missing: {:s}".format(
+                _LOCAL_TOOLS_DIRECTORY
+            )
+        )
+
+    import blmcp.tools as tools_package
+
+    if _LOCAL_TOOLS_DIRECTORY not in tools_package.__path__:
+        tools_package.__path__.append(_LOCAL_TOOLS_DIRECTORY)
+
+
 def main() -> int:
-    """Patch the connection helper, then delegate all CLI handling upstream."""
+    """Apply local low-latency extensions, then delegate CLI handling upstream."""
     _connection.send_code = _send_code
+    _configure_local_tools()
+    blmcp.FastMCP = _fast_mcp_with_compact_instructions
     return blmcp.main()
 
 

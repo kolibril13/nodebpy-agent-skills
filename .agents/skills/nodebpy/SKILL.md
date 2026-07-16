@@ -17,16 +17,17 @@ the active Blender tree. Do not recursively inspect the repository first.
 
 Resolve the script paths below relative to this `SKILL.md`.
 
-- Before the first Blender MCP call, run
-  `python3 scripts/blender_mcp_doctor.py` once
-  unless the connection has already been proven in the current task. Do not
-  repeat the probe unless a call errors or Blender/MCP restarts; if it fails,
-  stop before calling Blender MCP and report the connection blocker.
+- Make the required Blender MCP call directly; that call is the routine
+  connection check. Do not run `scripts/blender_mcp_doctor.py` as a preflight.
+- Run `python3 scripts/blender_mcp_doctor.py` only after an actual Blender MCP
+  connection failure or when the user explicitly requests diagnostics. Its
+  default is one attempt. Add `--wait SECONDS` only when deliberately waiting
+  for Blender or the bridge to become ready.
 - Serialize all Blender MCP calls. Never call Blender MCP concurrently or from
   subagents.
-- After a successful probe, retry a failed read-only call at most once. Never
-  blindly retry a mutation after it was sent or after an ambiguous timeout;
-  inspect state before deciding what to do next.
+- After diagnostics confirm recovery, retry a failed read-only call at most
+  once. Never blindly retry a mutation after it was sent or after an ambiguous
+  timeout; inspect state before deciding what to do next.
 - In an interactive Blender session, do not use `*_for_cli` tools.
 
 For MCP client configuration, run `scripts/blender_mcp_fast_server.py` with the

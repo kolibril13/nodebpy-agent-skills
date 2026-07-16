@@ -18,7 +18,7 @@ DEFAULT_HOST = os.environ.get("BLENDER_MCP_HOST", "127.0.0.1")
 DEFAULT_PORT = os.environ.get("BLENDER_MCP_PORT", "9876")
 DEFAULT_CONNECT_TIMEOUT = 0.5
 DEFAULT_RESPONSE_TIMEOUT = 1.5
-DEFAULT_WAIT = 3.0
+DEFAULT_WAIT = 0.0
 MAX_RESPONSE_BYTES = 1024 * 1024
 INITIAL_BACKOFF = 0.05
 MAX_BACKOFF = 0.5
@@ -161,7 +161,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         type=_non_negative_float,
         default=DEFAULT_WAIT,
         metavar="SECONDS",
-        help="total retry window; 0 performs one attempt (default: 3.0)",
+        help="total retry window; 0 performs one attempt (default: 0)",
     )
     return parser.parse_args(argv)
 
@@ -186,6 +186,10 @@ def main(argv: list[str] | None = None) -> int:
                 args.response_timeout,
                 deadline,
             )
+        except PermissionError as exc:
+            # A sandbox or policy denial cannot recover through backoff.
+            last_error = exc
+            break
         except (OSError, ProbeError) as exc:
             last_error = exc
             if deadline is None:
