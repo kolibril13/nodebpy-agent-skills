@@ -1,0 +1,247 @@
+# Math Operators
+
+Nodes in `nodebpy` support Python's arithmetic, comparison, and boolean operators. Instead of manually creating `Math`, `Compare`, or `BooleanMath` nodes and wiring them together, you can write expressions that read like regular Python code. The correct node type (`Math`, `IntegerMath`, `VectorMath`, `Compare`, `BooleanMath`, or `MultiplyMatrices`) is chosen automatically based on the socket types involved.
+
+## Arithmetic Operators
+
+The standard arithmetic operators `+`, `-`, `*`, `/` are joined by `**` (power), `%` (modulo), `//` (floor division), unary `-` (negate), and `abs()`.
+
+```python
+with g.tree("ArithmeticDemo") as tree:
+    out = tree.outputs.geometry()
+
+    val = g.Value(2.0)
+    scaled = val**2  # Math.power
+    wrapped = scaled % 5.0  # Math.floored_modulo
+    snapped = scaled // 3.0  # Math.divide -> Math.floor
+
+    _ = (
+        g.Points(100, position=g.RandomValue.vector(min=-1))
+        >> g.SetPosition(offset=g.Position() * snapped)
+        >> out
+    )
+
+tree
+```
+
+All operators automatically select the right node type. With integers you get `IntegerMath`, with vectors you get `VectorMath`, and scalars are broadcast when mixed with vectors:
+
+```python
+with g.tree("TypeDispatch") as tree:
+    out = tree.outputs.geometry()
+
+    # Integer operations use IntegerMath nodes
+    idx = g.Index()
+    row = idx // 10  # IntegerMath.divide_floor
+    col = idx % 10  # IntegerMath.modulo
+
+    # Vector operations use VectorMath nodes
+    pos = g.Position()
+    offset = pos**2  # VectorMath.power (element-wise)
+    wrapped = pos % (1, 1, 1)  # VectorMath.modulo
+
+    _ = g.Grid(10, 10, 100, 100) >> g.SetPosition(offset=wrapped) >> out
+
+tree
+```
+
+### Negation and Absolute Value
+
+The unary `-` and `abs()` operators work with all numeric types:
+
+```python
+with g.tree("UnaryOps") as tree:
+    _ = (
+        g.Cube()
+        >> g.SetPosition(offset=-abs(g.Position()))
+        >> tree.outputs.geometry()
+    )
+
+tree
+```
+
+## Comparison Operators
+
+The `<`, `>`, `<=`, `>=` operators create `Compare` nodes that output boolean sockets. The correct data type (float, integer, or vector) is inferred from the left-hand operand.
+
+```python
+with g.tree("CompareDemo") as tree:
+    out = tree.outputs.geometry()
+
+    pos = g.Position()
+    z = pos.o.position.z
+
+    above_ground = z > 0.0  # Compare.float.greater_than
+    below_ceiling = z <= 5.0  # Compare.float.less_equal
+
+    _ = (
+        g.Cube(size=10)
+        >> g.SetPosition(selection=above_ground, offset=(0, 0, 1))
+        >> out
+    )
+
+tree
+```
+
+## Comparison into a Switch
+
+The result of a comparison is a `Compare` node, which can be used to directly chain into a `Switch` node when in a Geometry node tree.
+This saves us some time having to directly use `g.Switch.float(pos.z > v, ...)`
+
+```python
+with g.tree("SwitchDemo") as tree:
+    v = g.Value(5.0)
+    pos = g.Position().o.position
+    result = (pos.z > v).switch.float(g.RandomValue.float(), 5.0 ** g.Value(10.0))
+
+tree
+```
+
+## Boolean Operators
+
+Python's bitwise operators `&` (and), `|` (or), `^` (xor), and `~` (not) map to `BooleanMath` nodes. These are especially useful for combining comparison results into complex selections.
+
+```python
+with g.tree("BooleanDemo") as tree:
+    out = tree.outputs.geometry()
+
+    z = g.SeparateXYZ(g.Position()).o.z
+
+    # Combine conditions: select points in a vertical band
+    selection = (z > -2.0) & (z < 2.0)
+
+    _ = (
+        g.Cube(size=6)
+        >> g.MeshToPoints()
+        >> g.SetPosition(selection=selection, offset=(1, 0, 0))
+        >> out
+    )
+
+tree
+```
+
+The `~` operator inverts a boolean:
+
+```python
+with g.tree("InvertDemo") as tree:
+    is_even = (g.Index() % 2) > 0
+    is_odd = ~is_even
+
+    _ = (
+        g.MeshLine(count=20)
+        >> g.MeshToPoints()
+        >> g.SetPosition(selection=is_odd, offset=(0, 0, 0.5))
+        >> tree.outputs.geometry()
+    )
+
+tree
+```
+
+## Matrix Multiplication
+
+The `@` operator maps to `MultiplyMatrices`, composing two 4x4 transformation matrices.
+You can also multiply a matrix by a vector using `@` and a `TransformPoint` will automatically be added.
+
+```python
+with g.tree("MatmulDemo") as tree:
+    rotate = g.CombineTransform(rotation=(0, 45, 0))
+    translate = g.CombineTransform(translation=(2, 0, 0))
+
+    _ = g.Cube() >> g.SetPosition(position=rotate @ translate @ g.Position())
+
+tree
+```
+
+## Putting It All Together
+
+Here are some examples of building small algorithms entirely with operators.
+
+### Checkerboard Selection
+
+Select alternating faces on a grid using integer modulo and comparisons:
+
+```python
+with g.tree("Checkerboard") as tree:
+    idx = g.Index()
+    row = idx // 10
+    col = idx % 10
+    is_checker = ((row + col) % 2) > 0
+
+    _ = (
+        g.Grid(10, 10, 10, 10)
+        >> g.SetPosition(selection=is_checker, offset=(0, 0, 0.5))
+        >> tree.outputs.geometry()
+    )
+
+tree
+```
+
+### Layered Selection
+
+Divide space into layers using floor division, then select specific layers:
+
+```python
+with g.tree("Layers") as tree:
+    z = g.SeparateXYZ(g.Position()).o.z
+    layer = g.SeparateXYZ(g.Position() // (1, 1, 1)).o.z
+
+    selection = (layer > 0) & (layer < 3) & ~(layer > 1)
+
+    _ = (
+        g.Cube(size=5)
+        >> g.MeshToPoints()
+        >> g.SetPosition(selection=selection, offset=(1, 0, 0))
+        >> tree.outputs.geometry()
+    )
+
+tree
+```
+
+### Spiral Point Distribution
+
+Use power and modulo to create a spiral-like displacement pattern:
+
+```python
+with g.tree("Spiral") as tree:
+    pos = g.Position().o.position
+    angle = pos.x * 3.14
+    radius = abs(pos.y) ** 0.5
+
+    spiral_offset = g.CombineXYZ(
+        x=g.Math.cosine(angle) * radius,
+        y=g.Math.sine(angle) * radius,
+        z=pos.z,
+    )
+
+    _ = (
+        g.Points(500, position=g.RandomValue.vector(min=-1))
+        >> g.SetPosition(position=spiral_offset)
+        >> tree.outputs.geometry()
+    )
+
+tree
+```
+
+## Operator Reference
+
+| Operator | Python | Node |
+|:---------|:-------|:-----|
+| Add | `a + b` | Math / VectorMath / IntegerMath |
+| Subtract | `a - b` | Math / VectorMath / IntegerMath |
+| Multiply | `a * b` | Math / VectorMath / IntegerMath |
+| Divide | `a / b` | Math / VectorMath / IntegerMath |
+| Power | `a ** b` | Math / VectorMath / IntegerMath |
+| Modulo | `a % b` | Math / VectorMath / IntegerMath |
+| Floor Divide | `a // b` | IntegerMath (int) or Divide+Floor (float/vector) |
+| Negate | `-a` | IntegerMath.negate / Math.multiply(a, -1) / VectorMath.scale(a, -1) |
+| Absolute | `abs(a)` | Math / VectorMath / IntegerMath `.absolute` |
+| Less Than | `a < b` | Compare |
+| Greater Than | `a > b` | Compare |
+| Less Equal | `a <= b` | Compare |
+| Greater Equal | `a >= b` | Compare |
+| And | `a & b` | BooleanMath |
+| Or | `a \| b` | BooleanMath |
+| Xor | `a ^ b` | BooleanMath |
+| Not | `~a` | BooleanMath |
+| Matrix Multiply | `a @ b` | MultiplyMatrices |
+| Chain | `a >> b` | Links output to input |

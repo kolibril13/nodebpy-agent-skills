@@ -1,0 +1,6 @@
+[mcp_servers.blender]
+command = "sh"
+args = [
+    "-c",
+    'cd "$HOME/blender_mcp/mcp" && exec uv run blender-mcp',
+]
