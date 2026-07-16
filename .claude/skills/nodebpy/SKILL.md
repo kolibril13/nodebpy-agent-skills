@@ -1,29 +1,27 @@
 ---
 name: nodebpy
-description: Build Blender node trees (geometry nodes, shader nodes, compositor) programmatically with the nodebpy Python library, executed live in Blender via the Blender MCP. Use when the user wants to create or modify Blender node setups, geometry nodes, shaders, or compositor trees from code.
+description: Build Blender node trees (geometry nodes, shader nodes, compositor) programmatically with the nodebpy Python library, executed via the Blender MCP. Use when the user wants to create or modify Blender node setups, geometry nodes, shaders, or compositor trees.
 ---
 
 # nodebpy — Blender node trees from Python
 
-All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodebpy/),
-executed live in Blender via the Blender MCP code-execution tool. Never wire nodes
-with raw `bpy` links — `nodebpy` owns tree *construction and linking*.
+All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodebpy/) via the Blender MCP. 
 
-Property edits on existing nodes are a different concern and raw `bpy` is fine for
-them — e.g. renaming a shader `Attribute` node's `attribute_name`, or restyling a
-`ColorRamp`'s stops. This matters especially for shader/material trees, since the
-skill's `from nodebpy import geometry as g` surface targets geometry-node trees;
-retuning an existing shader node's properties directly is simpler than modeling
-the whole material in nodebpy.
+Never wire nodes with raw `bpy` links — `nodebpy` owns tree *construction and linking*.
+
+Property edits on existing nodes with raw `bpy` is fine e.g.
+- renaming a shader `Attribute` node's `attribute_name`
+- restyling a `ColorRamp`'s stops. 
 
 ## Workflow
 
-Minimize Blender MCP latency: use one call to read/export the active tree and one
-call to edit it, including verification in the edit result. Make extra calls only
-after an error or when the initial read leaves the requested change ambiguous.
+Minimize Blender MCP latency 
+- use one call to read/export the active tree and one call to edit it.
+- No verification of the edit result. 
+- Extra calls only after an error or when the initial read leaves the requested change ambiguous.
 
 1. **Nodes to code first.** Assume the node tree is already open and on screen for
-   the currently selected object. Export it to nodebpy code before touching it:
+   the currently selected object. Export it to nodebpy code:
 
    ```python
    import bpy
@@ -33,36 +31,22 @@ after an error or when the initial read leaves the requested change ambiguous.
    tree = obj.modifiers.active.node_group  # or the tree open in the editor
    print(to_python(tree))
    ```
+   Read the generated code to understand the existing structure. 
 
-   This is now the tree you are working on. Read the generated code to understand
-   the existing structure. If a node has no `nodebpy` emitter, `to_python()` raises
-   by default — pass `strict=False` to instead emit a placeholder and keep going,
-   and grep the result for `TODO: unsupported` before trusting the round-trip:
-
-   ```python
-   code = to_python(tree, strict=False)
-   assert "TODO: unsupported" not in code, "unsupported node(s) — check manually"
-   ```
+2. **Edit as code.** Modify the generated nodebpy code and re-run it to rebuild the
+   tree. Running the code creates a *new* node group — repoint the modifier to it
+   and remove the stale one (or delete the old group first to free the name).
 
    Also check `tree.animation_data` before deciding to rebuild: keyframes on
    node defaults (e.g. an animated Mix factor) live on the tree datablock and are
    destroyed by a rebuild. If fcurves exist, don't rebuild — graft the change
    into the existing tree instead.
 
-2. **Edit as code.** Modify the generated nodebpy code and re-run it to rebuild the
-   tree. Running the code creates a *new* node group — repoint the modifier to it
-   and remove the stale one (or delete the old group first to free the name).
-
 3. **New trees when needed.** Add separate node groups with `with g.tree("Name"):`
    when logic is reusable; they nest into other trees like any node.
 
-4. **Never render or screenshot to verify work.** Building and wiring the tree is
-   the deliverable; rendering is slow and not needed to confirm correctness.
-   Verify instead by re-exporting with `to_python()`, or by inspecting
-   `tree.tree.nodes` / `.links` / socket `default_value`s directly. Only render or
-   take a screenshot if the user explicitly asks to see an image.
 
-Gotchas:
+Note:
 
 - `with g.tree(...) as tree` yields a `TreeBuilder`, not the underlying
   `bpy.types.NodeTree`. Anything that needs a real ID datablock — assigning to a
@@ -76,7 +60,7 @@ Gotchas:
 - Interface sockets are created once via `tree.inputs.*` / `tree.outputs.*`; keep a
   variable to link to them (`tree.outputs` is not subscriptable).
 
-## Special quirks
+## Further instructions
 
 - If `import nodebpy` fails in Blender, run:
 ```python
@@ -84,33 +68,16 @@ import sys, subprocess
 subprocess.check_call([sys.executable, "-m", "pip", "install", "nodebpy"])
 ```
 
-- **Rebuilding trees that contain a `CustomGeometryGroup`:** instantiating the
-  class (e.g. `SafeArrow(...)`) inside a `TreeBuilder` does *not* rebuild the
-  nested group if a node group with that `_name` already exists in
-  `bpy.data.node_groups` — it silently reuses the stale one, so edits to
-  `_build_group` appear to have no effect.
+- Only render or take a screenshot if the user explicitly asks to see an image.
 
-  This reuse is a **feature, not a hazard** when the nested group is unchanged:
-  leaving it in place preserves any external references to it and avoids
-  re-verifying groups you didn't touch. The hazard is only when you *edited* a
-  class and forget to delete its cached group. So delete narrowly — only the
-  outer tree, plus only the nested groups whose `_build_group` actually changed:
-
-  ```python
-  for ng in list(bpy.data.node_groups):
-      if ng.name in ("Geometry Nodes", "Safe Arrow"):  # outer tree + only the edited nested group(s)
-          bpy.data.node_groups.remove(ng)
-  ```
-
-  Detach the modifier first (`mod.node_group = None`) so removal is safe, rebuild,
-  then repoint the modifier to the new group. Verify the edit actually landed by
-  re-exporting with `to_python()` — don't trust that the rebuild picked up the new
-  class definition.
+- **Rebuilding `CustomGeometryGroup` trees:** existing nested groups with the same
+  `_name` are reused. Detach the modifier, delete the outer tree and only nested
+  groups whose `_build_group` changed, then rebuild, repoint, and re-export to
+  verify. Keep unchanged nested groups intact.
 - **Grafting nodes into an existing tree:** place the new node between the two
   nodes it links to (midpoint of upstream and downstream partner). Compute this
   in absolute coords: nodes inside a node frame store `.location` relative to that frame — and frames nest — so sum `.location` up the `.parent` chain first.
 
-- `nodebpy` has no `__version__` attribute — don't report it in status dicts.
 - **Setting a Geometry Nodes modifier's input values from Python** (e.g. to drive
   test values into a tree without rendering): the classic `mod["Socket_0"] = value`
   raises `TypeError: id properties not supported for this type` on recent Blender
