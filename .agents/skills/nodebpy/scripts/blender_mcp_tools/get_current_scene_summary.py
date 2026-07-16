@@ -48,7 +48,7 @@ def _format_summary(payload: dict[str, object]) -> str:
     resolution = _list(render.get("resolution"))
     selected = _names(payload.get("selected_objects"))
 
-    path = str(file_info.get("path") or "unsaved")
+    path = str(file_info.get("path") or "untitled")
     save_state = "saved" if file_info.get("saved") else "unsaved"
     dirty_state = "dirty" if file_info.get("dirty") else "clean"
     lines = [

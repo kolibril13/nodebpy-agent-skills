@@ -50,7 +50,7 @@ def _bounded_names(values: Iterable[str], limit: int) -> tuple[list[str], int]:
 
 
 def _float(value: Any) -> float:
-    rounded = round(float(value), 6)
+    rounded = round(float(value), 4)
     return 0.0 if rounded == 0.0 else rounded
 
 
