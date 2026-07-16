@@ -1,6 +1,16 @@
 [mcp_servers.blender]
-command = "sh"
+command = "/Users/jan-hendrik/Library/Application Support/Claude/Claude Extensions/ant.dir.gh.blender.blender-mcp/.venv/bin/python"
 args = [
-    "-c",
-    'cd "$HOME/blender_mcp/mcp" && exec uv run blender-mcp',
+    "/Users/jan-hendrik/projects/nodebpy-agent-skills/.agents/skills/nodebpy/scripts/blender_mcp_fast_server.py",
 ]
+env = {
+    BLENDER_MCP_HOST = "127.0.0.1",
+    BLENDER_MCP_PORT = "9876",
+    BLENDER_MCP_CONNECT_TIMEOUT = "0.5",
+    BLENDER_MCP_RESPONSE_TIMEOUT = "30",
+    BLENDER_MCP_MAX_RESPONSE_BYTES = "67108864",
+    PYTHONDONTWRITEBYTECODE = "1",
+}
+startup_timeout_sec = 3
+tool_timeout_sec = 35
+required = true

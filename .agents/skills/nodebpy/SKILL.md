@@ -13,6 +13,28 @@ This skill is runtime-oriented: the target is the currently connected Blender
 session, not this skill repository. Start with the Blender MCP connection and
 the active Blender tree. Do not recursively inspect the repository first.
 
+### Connection gate
+
+Resolve the script paths below relative to this `SKILL.md`.
+
+- Before the first Blender MCP call, run
+  `python3 scripts/blender_mcp_doctor.py` once
+  unless the connection has already been proven in the current task. Do not
+  repeat the probe unless a call errors or Blender/MCP restarts; if it fails,
+  stop before calling Blender MCP and report the connection blocker.
+- Serialize all Blender MCP calls. Never call Blender MCP concurrently or from
+  subagents.
+- After a successful probe, retry a failed read-only call at most once. Never
+  blindly retry a mutation after it was sent or after an ambiguous timeout;
+  inspect state before deciding what to do next.
+- In an interactive Blender session, do not use `*_for_cli` tools.
+
+For MCP client configuration, run `scripts/blender_mcp_fast_server.py` with the
+official Blender MCP environment's Python interpreter as the fail-fast
+launcher. Use `python3 scripts/blender_mcp_tune.py --apply` only when the user
+asks to persist the official add-on's low-latency polling settings; omit
+`--apply` to inspect the current values.
+
 Read only the task-relevant skill references after the active tree is known.
 In particular, do not open or analyze `sync_skills.py`, generated symlinks,
 plugin metadata, Git history, or README files unless the user explicitly asks
