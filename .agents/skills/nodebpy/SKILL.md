@@ -5,7 +5,29 @@ description: Build Blender node trees (geometry nodes, shader nodes, compositor)
 
 # nodebpy — Blender node trees from Python
 
-All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodebpy/) via the Blender MCP. 
+All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodebpy/) via the Blender MCP.
+
+## Fast path and repository scope
+
+This skill is runtime-oriented: the target is the currently connected Blender
+session, not this skill repository. Start with the Blender MCP connection and
+the active Blender tree. Do not recursively inspect the repository first.
+
+Read only the task-relevant skill references after the active tree is known.
+In particular, do not open or analyze `sync_skills.py`, generated symlinks,
+plugin metadata, Git history, or README files unless the user explicitly asks
+about skill packaging or repository maintenance. Those files do not affect the
+node tree in Blender.
+
+If the Blender MCP tools are not visible, do not spend time scanning the repo
+to rediscover them. Check the configured MCP server once, then report the
+connection blocker or use the explicitly configured local Blender connection
+if the environment provides one.
+
+For repository reading, treat the task's named files and the selected skill's
+direct references as the allowlist. Everything else is out of scope by
+default. A project-level `AGENTS.md` can narrow this allowlist further; it
+cannot replace the Blender MCP workflow below.
 
 Never wire nodes with raw `bpy` links — `nodebpy` owns tree *construction and linking*.
 
@@ -19,6 +41,11 @@ Minimize Blender MCP latency
 - use one call to read/export the active tree and one call to edit it.
 - No verification of the edit result. 
 - Extra calls only after an error or when the initial read leaves the requested change ambiguous.
+
+Do not add exploratory shell calls between MCP calls unless they are needed to
+resolve an actual connection or import error. Most observed latency variance
+comes from MCP/session startup and Blender-side execution, not from nodebpy
+tree construction.
 
 1. **Nodes to code first.** Assume the node tree is already open and on screen for
    the currently selected object. Export it to nodebpy code:
