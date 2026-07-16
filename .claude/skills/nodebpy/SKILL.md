@@ -16,19 +16,11 @@ skill's `from nodebpy import geometry as g` surface targets geometry-node trees;
 retuning an existing shader node's properties directly is simpler than modeling
 the whole material in nodebpy.
 
-## Setup
-
-Ensure nodebpy is importable in Blender's Python (install if missing):
-
-```python
-import sys, subprocess
-try:
-    import nodebpy
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "nodebpy"])
-```
-
 ## Workflow
+
+Minimize Blender MCP latency: use one call to read/export the active tree and one
+call to edit it, including verification in the edit result. Make extra calls only
+after an error or when the initial read leaves the requested change ambiguous.
 
 1. **Nodes to code first.** Assume the node tree is already open and on screen for
    the currently selected object. Export it to nodebpy code before touching it:
@@ -85,6 +77,12 @@ Gotchas:
   variable to link to them (`tree.outputs` is not subscriptable).
 
 ## Special quirks
+
+- If `import nodebpy` fails in Blender, run:
+```python
+import sys, subprocess
+subprocess.check_call([sys.executable, "-m", "pip", "install", "nodebpy"])
+```
 
 - **Rebuilding trees that contain a `CustomGeometryGroup`:** instantiating the
   class (e.g. `SafeArrow(...)`) inside a `TreeBuilder` does *not* rebuild the

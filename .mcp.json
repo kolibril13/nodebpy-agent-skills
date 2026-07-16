@@ -1,12 +1,10 @@
 {
   "mcpServers": {
     "blender": {
-      "command": "uv",
+      "command": "sh",
       "args": [
-        "run",
-        "--directory",
-        "/Users/jan-hendrik/blender_mcp/mcp",
-        "blender-mcp"
+        "-c",
+        "cd \"$HOME/blender_mcp/mcp\" && exec uv run blender-mcp"
       ]
     }
   }
