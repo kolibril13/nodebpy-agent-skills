@@ -5,7 +5,7 @@
 # ///
 
 
-# run via uv run ```sync_skills.py````
+# run via -> uv run sync_skills.py
 
 """Link canonical agent skills into Claude's project skill directory."""
 
