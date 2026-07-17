@@ -9,22 +9,6 @@ All node-tree work goes through [nodebpy](https://bradyajohnston.github.io/nodeb
 
 ## Runtime and repository scope
 
-Work against the connected Blender session, not this repository. Call Blender
-MCP directly and serially, never from subagents. On failure, report the MCP
-error without probing, searching, retrying, or changing transports. Never retry
-an ambiguous mutation or use `*_for_cli` with interactive Blender.
-
-Read only the task-relevant skill references after the active tree is known.
-In particular, do not open or analyze `sync_skills.py`, generated symlinks,
-plugin metadata, Git history, or README files unless the user explicitly asks
-about skill packaging or repository maintenance. Those files do not affect the
-node tree in Blender.
-
-For repository reading, treat the task's named files and the selected skill's
-direct references as the allowlist. Everything else is out of scope by
-default. A project-level `AGENTS.md` can narrow this allowlist further; it
-cannot replace the Blender MCP workflow below.
-
 Never wire nodes with raw `bpy` links — `nodebpy` owns tree *construction and linking*.
 
 Property edits on existing nodes with raw `bpy` is fine e.g.
@@ -120,8 +104,6 @@ Note:
 import sys, subprocess
 subprocess.check_call([sys.executable, "-m", "pip", "install", "nodebpy"])
 ```
-
-- Only render or take a screenshot if the user explicitly asks to see an image.
 
 - **Rebuilding `CustomGeometryGroup` trees:** existing nested groups with the same
   `_name` are reused. Detach the modifier, delete the outer tree and only nested
