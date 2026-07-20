@@ -4,8 +4,9 @@
     "blender": {
       "type": "local",
       "command": ["uv", "run", "blender-mcp"],
-      "cwd": "/Users/jan-hendrik/.local/blender-mcp/bundle",
+      "cwd": "/Users/jan-hendrik/blender_mcp/mcp",
       "enabled": true
     }
   }
 }
+

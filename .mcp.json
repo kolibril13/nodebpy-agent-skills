@@ -6,7 +6,7 @@
         "run",
         "blender-mcp"
       ],
-      "workdir": "/Users/jan-hendrik/.local/blender-mcp/bundle"
+      "workdir": "/Users/jan-hendrik/blender-mcp/bundle"
     }
   }
 }
