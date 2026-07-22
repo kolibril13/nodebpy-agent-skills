@@ -1,12 +1,15 @@
 {
   "mcpServers": {
     "blender": {
+      "type": "stdio",
       "command": "uv",
       "args": [
+        "--directory",
+        "/Users/jan-hendrik/blender_mcp/mcp",
         "run",
         "blender-mcp"
       ],
-      "workdir": "/Users/jan-hendrik/blender-mcp/bundle"
+      "env": {}
     }
   }
 }

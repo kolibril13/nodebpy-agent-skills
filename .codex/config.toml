@@ -1,34 +1,5 @@
 [mcp_servers.blender]
-command = "/Users/jan-hendrik/Library/Application Support/Claude/Claude Extensions/ant.dir.gh.blender.blender-mcp/.venv/bin/python"
-args = [
-    "/Users/jan-hendrik/projects/nodebpy-agent-skills/.agents/skills/nodebpy/scripts/blender_mcp_fast_server.py",
-]
-env = {
-    BLENDER_MCP_HOST = "127.0.0.1",
-    BLENDER_MCP_PORT = "9876",
-    BLENDER_MCP_CONNECT_TIMEOUT = "0.5",
-    BLENDER_MCP_RESPONSE_TIMEOUT = "30",
-    BLENDER_MCP_MAX_RESPONSE_BYTES = "67108864",
-    PYTHONDONTWRITEBYTECODE = "1",
-}
-startup_timeout_sec = 3
-tool_timeout_sec = 35
-required = true
-enabled_tools = [
-    "get_current_scene_summary",
-    "get_objects_summary",
-    "get_object_detail_summary",
-    "get_blendfile_summary_datablocks",
-    "get_blendfile_summary_missing_files",
-    "get_blendfile_summary_of_linked_libraries",
-    "get_blendfile_summary_path_info",
-    "get_blendfile_summary_usage_guess",
-    "execute_blender_code",
-    "get_screenshot_of_area_as_image",
-    "get_screenshot_of_window_as_image",
-    "render_thumbnail_to_path",
-    "render_viewport_to_path",
-    "search_api_docs",
-    "search_manual_docs",
-    "get_python_api_docs",
-]
+command = "uv"
+args = ["run", "blender-mcp"]
+cwd = "/Users/jan-hendrik/blender_mcp/mcp"
+enabled = true
