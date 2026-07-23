@@ -45,6 +45,12 @@ Property edits on existing nodes with raw `bpy` is fine e.g.
   `TEXTURE` for texture-oriented groups, `VECTOR` for vector utilities, and
   the closest matching tag for other specialized groups. Set it on the real
   node tree after construction, e.g. `tree.tree.color_tag = "SHADER"`.
+- **Keep node auto-arrange on.** `TreeBuilder`/`g.tree(...)` default to
+  `arrange="sugiyama"`, so a plain `with g.tree("Name") as tree:` auto-lays-out
+  the tree on exit — rely on that default and do **not** pass `arrange=None`.
+  `arrange=None` disables auto-layout and is only correct when you also supply an
+  explicit `tree.node_positions = {...}` map (as the nodes-to-code export does to
+  round-trip exact positions). For newly authored trees, never turn arranging off.
 
 ## Workflow
 
