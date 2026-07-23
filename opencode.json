@@ -7,6 +7,18 @@
       "cwd": "/Users/jan-hendrik/blender_mcp/mcp",
       "enabled": true
     }
+  },
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Local Ollama",
+      "options": { "baseURL": "http://localhost:11434/v1" },
+      "models": {
+        "qwen3-coder:latest": { "name": "Qwen3 Coder" },
+        "devstral:latest": { "name": "Devstral 24B" },
+        "gemma4:26b": { "name": "Gemma 4 26B" }
+      }
+    }
   }
 }
 
