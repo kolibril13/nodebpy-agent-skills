@@ -1,4 +1,10 @@
+
+
+
+
 # nodebpy agent skill
+
+https://github.com/user-attachments/assets/eadac8ba-8e99-4a25-8649-aed1f7484c82
 
 Build and edit Blender Geometry Nodes, shader nodes, and compositor trees with
 [nodebpy](https://bradyajohnston.github.io/nodebpy/). The skill gives coding
