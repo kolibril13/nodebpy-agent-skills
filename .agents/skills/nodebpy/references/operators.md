@@ -99,7 +99,7 @@ tree
 
 ## Boolean Operators
 
-Python's bitwise operators `&` (and), `|` (or), `^` (xor), and `~` (not) map to `BooleanMath` nodes. These are especially useful for combining comparison results into complex selections.
+Python's bitwise operators `&` (and), `|` (or), `^` (xor), and `~` (not) map to `BooleanMath` nodes on *booleans*. These are especially useful for combining comparison results into complex selections. On **integers** the same operators build `BitMath` nodes instead, operating bit by bit — see [newer-node-apis.md](newer-node-apis.md).
 
 ```python
 with g.tree("BooleanDemo") as tree:
@@ -239,9 +239,9 @@ tree
 | Greater Than | `a > b` | Compare |
 | Less Equal | `a <= b` | Compare |
 | Greater Equal | `a >= b` | Compare |
-| And | `a & b` | BooleanMath |
-| Or | `a \| b` | BooleanMath |
-| Xor | `a ^ b` | BooleanMath |
-| Not | `~a` | BooleanMath |
+| And | `a & b` | BooleanMath (bool) / BitMath (int) |
+| Or | `a \| b` | BooleanMath (bool) / BitMath (int) |
+| Xor | `a ^ b` | BooleanMath (bool) / BitMath (int) |
+| Not | `~a` | BooleanMath (bool) / BitMath (int) |
 | Matrix Multiply | `a @ b` | MultiplyMatrices |
 | Chain | `a >> b` | Links output to input |

@@ -50,17 +50,16 @@ The generated source is self-contained — running it recreates the tree.
 
 ## Complex Example
 
-This is a new node group asset in Blender 5.2 to do PCA on the positions of points.
-Two examples of this node group below, with the generated and the human-curated / written versions below. More through and elegance can be put into the human-written version, but the generated version can be improved with time.
-
-### Generated
+This is a node group asset in Blender 5.3 that does PCA on the positions of points.
+The human-written version below shows how much more elegance can be put into code
+written by hand than into generated code, which `to_python()` keeps improving on.
 
 ### Human-written
 
 ```python
 from nodebpy import geometry as g
 
-with g.tree():
+with g.tree("PCA") as tree:
     position = tree.inputs.vector("Position", default_input="POSITION")
     group_id = tree.inputs.integer(
         "Group ID",
@@ -165,6 +164,25 @@ Positions inside nested groups are preserved too.
 Reroute nodes are pure wire-routing aids, so by default each reroute chain is collapsed into a direct link.
 Pass `keep_reroutes=True` to preserve them as `g.Reroute(...)` pass-throughs — useful together with `snapshot_positions` to reproduce the original wire routing exactly.
 
+### Rebuilding in place
+
+`in_place=True` emits a `with` block that rebuilds into the *same* tree datablock
+(`clear=True`), rather than code that creates a new node group:
+
+```python
+code = to_python(node_tree, in_place=True)
+```
+
+That is what you want when the tree is already wired into a modifier or material: the
+modifier stays attached, its input values survive, and no `.001` duplicate appears.
+
+### Nested groups
+
+By default nested node groups are emitted inline, as part of the same source.
+`groups="reference"` instead references them as already-existing groups, and
+`group_modules` maps a group to the module it should be imported from — useful when a
+library of groups is already version-controlled elsewhere.
+
 ### Formatting
 
 When the optional [`ruff`](https://docs.astral.sh/ruff/) package is installed (`pip install nodebpy[format]`), the generated source is run through `ruff format` for tidier output — for example wrapping long lines the generator left on one line.
@@ -178,12 +196,15 @@ Simulation, repeat and for-each zones are reconstructed using the zone item API 
 with TreeBuilder("Stack") as tree:
     out = tree.outputs.geometry("Geometry")
     zone = g.RepeatZone(5)
-    geo = zone.item("Geometry", g.Cube())
+    geo = zone.items.geometry(g.Cube(), "Geometry")
     (geo.current >> g.TransformGeometry(translation=(0, 0, 1.1))) >> geo.next
     geo.result >> out
 
 code = tree.to_python()
 ```
+
+The generated code declares each item the same way — the value first, then the name —
+so zone trees round-trip through `to_python()` unchanged.
 
 ## Frames
 
@@ -203,7 +224,7 @@ code = tree.to_python()
 ## Archiving as Classes
 
 By default the top-level tree is emitted as a `with TreeBuilder(...) as tree:` block.
-Pass `top_level="class"` to instead emit *every* node group — including the one being exported — as a [`CustomGeometryGroup`](custom-node-groups.qmd) subclass.
+Pass `top_level="class"` to instead emit *every* node group — including the one being exported — as a [`CustomGeometryGroup`](custom-node-groups.md) subclass.
 Each class builds its tree through `ClassName.create_group()`, making it a clean way to archive a set of node groups as plain, reusable Python:
 
 ```python

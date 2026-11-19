@@ -50,10 +50,10 @@ through a **named attribute stored before instancing**, read back by an
    instanced = colored >> g.InstanceOnPoints(instance=g.UVSphere(...))
    ```
 
-2. **Read it back in the material with `attribute_type="INSTANCER"`.** This is
-   raw `bpy` on the existing material's shader nodes — nodebpy's `geometry`
-   surface targets GN trees, not shader trees, so retuning an existing shader
-   `Attribute` node is simpler done directly:
+2. **Read it back in the material with `attribute_type="INSTANCER"`.** nodebpy does
+   build shader trees (`from nodebpy import shader as s`, plus `CustomShaderGroup`
+   and `MaterialBuilder`), but retuning a couple of properties on an *existing*
+   material's nodes is a property edit, so raw `bpy` is simpler here:
 
    ```python
    import bpy

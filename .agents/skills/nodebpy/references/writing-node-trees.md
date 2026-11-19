@@ -46,7 +46,9 @@ with g.tree("AnotherAnotherTree") as tree:
 
 The socket interface nodes define what values / sockets are available as inputs for the node tree.
 
-We define them in a similar way to the socekts themselves, using context with the `tree.inputs` and `tree.outputs` and adding sockets with the `s.SocketGeometry()`.
+We define them with the typed methods on `tree.inputs` and `tree.outputs`
+(`tree.inputs.geometry("Geometry")`, `tree.inputs.integer("Count", 10)`,
+`tree.outputs.geometry()`), keeping the returned socket in a variable to link to.
 
 ```python
 with g.tree("NewTree") as tree:
@@ -78,24 +80,40 @@ tree
 
 ## Zones
 
-Zones like the repeat and simulation zone are initialized with their `SimulationZone()` and `RepeatZone()` constructors. You can add individvual `RepeatInput()` node and output, but they require additional setup to be actually linked. The repeat zone can be initialized with a repeat count, which can also be linked to from elsewhere.
+Zones are initialized with their constructors — `RepeatZone()`, `SimulationZone()`,
+`ForEachGeometryElementZone()`, `ClosureZone()`. The repeat zone takes a repeat count,
+which can also be linked to from elsewhere.
 
-We can access the input and output nodes with `zone.input` and `zone.output`. The repeat zone has the `zone.iteration` which is the iteration number of the current zone. Simulation zone has the `zone.delta_time` which is the time between previous and current simulation loop.
+We can access the input and output nodes with `zone.input` and `zone.output`. The repeat
+zone has the `zone.iteration` which is the iteration number of the current zone.
+Simulation zone has the `zone.delta_time` which is the time between previous and current
+simulation loop.
 
-Because of the complexity of zones, we have the `Item` helper which gives access to the input & output sockets on the input and output nodes (4 sockets total). For the Simulation and Repeat zones, we have the:
+### Zone items
 
-| Code | Socket|
+A zone's state is declared through its `items` collection, with one typed method per
+socket type. Each method takes **the value first, then an optional name**
+(`zone.items.geometry(g.Cube(), "Geometry")`); omit the value to declare an unlinked
+item, and use `items.new(value, name, type="FLOAT")` to pick the type at runtime.
+`len(items)`, iteration, `items[0]` and `items["Name"]` all work.
+
+Each method returns an `Item` handle exposing the four sockets of the zone pair:
+
+| Code | Socket |
 | --- | --- |
- |`item.initial`| `zone.input.i["Geometry"]`|
- |`item.current`| `zone.input.o["Geometry"]`|
- |`item.next`| `zone.output.i["Geometry"]`|
- |`item.result`| `zone.output.o["Geometry"]`|
+ |`item.initial`| fed into the zone, before it runs |
+ |`item.current`| the value read inside the zone |
+ |`item.next`| the value written inside the zone |
+ |`item.result`| the value after the zone has run |
+
+A handle also stands in for its sockets in a chain: on the left of `>>` it is the output
+side, on the right the input side.
 
 ```python
 with g.tree() as tree:
     zone = g.RepeatZone(10)
     random_pos = g.RandomValue.vector(seed=zone.iteration)
-    geo = zone.item("Geometry", type="GEOMETRY")
+    geo = zone.items.geometry(name="Geometry")
     g.JoinGeometry([geo.current, g.Points(10, random_pos)]) >> geo.next
     geo.result >> tree.outputs.geometry()
 
@@ -104,14 +122,18 @@ tree
 
 ```python
 with g.tree() as tree:
-    # this initializes the zone with two socket inputs for each of the values
-    # we manually specify the socket names
-    zone = g.SimulationZone({"Value": g.Value(), "Vector": g.Vector()})
-    zone.input.o["Value"] + 10 >> zone.output
+    # each item carries its initial value, and is named after it when no name is given
+    sim = g.SimulationZone()
+    value = sim.items.float(g.Value(), "Value")
+    vector = sim.items.vector((0.0, 0.0, 0.0), "Vector")
 
-    # this should automatically pick the vector input socket because we are
-    # explicity about the VectorMath and it will be the most compatible
-    zone.input >> g.VectorMath.add(..., (0.2, 0.4, 0.6)) >> zone.output
+    value.current + 10 >> value.next
+    vector.current + (0.2, 0.4, 0.6) >> vector.next
+
+    g.Points(10) >> tree.outputs.geometry()
 
 tree
 ```
+
+The constructors also take the items up front, which is handy when every item has an
+initial value: `g.RepeatZone(10, {"Geometry": g.Cube()})`, then `zone.items["Geometry"]`.
